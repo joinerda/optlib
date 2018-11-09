@@ -1,0 +1,18 @@
+The standard method of compiling and installing is to use cmake.
+
+Typical installation will include
+
+     mkdir build
+     cd build
+     ccmake ..
+
+        (fill in options you want)
+  
+     make
+     make install
+
+which will install include files and the libopt.a archive, as well as the
+ol_serial_driver test program.
+
+As of version 1.1.0, the MPI stuff from 1.0 is still in the code, but
+I've not implemented it in the move to a single "optlib" frontend yet.

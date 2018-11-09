@@ -1,0 +1,2 @@
+#define optlib_VERSION_MAJOR "@optlib_VERSION_MAJOR@"
+#define optlib_VERSION_MINOR "@optlib_VERSION_MINOR@"

@@ -1,0 +1,183 @@
+OPTLIB
+
+Using OptLib
+
+The main routine used by optlib is the OPTLIB_Minimize
+routine. In it's simplest usage, you provide a function
+that accepts n real values to be minimized, and a guess
+as to the values. The guess is replaced with the 
+attempted minimization.
+
+---------- SIMPLE EXAMPLE --------
+
+#include "optlib.h"
+#include <stdio.h>
+
+double func(double *x, void * func_data) {
+    // simple function example, no use of func_data,
+    //    function returns (x-0.5)^2 + (y-0.25)^2
+    //    which should have minimum at x=0.5, y=0.25;
+    return (x[0]-0.5)*(x[0]-0.5)+(x[1]-0.25)*(x[1]-0.25);
+}
+
+int main(int argc, char ** argv) {
+    int n=2;
+    double guess[2];
+
+    // see random number generator
+    seed_by_time(0); // time based seed to random number generator
+                     // routine provided by optlib
+
+    // initialize guess
+    guess[0]=drand(0,1); //drand routine in optlib returns random
+    guess[1]=drand(0,1); //     double from a to b
+    
+    // minimize function, NULL argument passed for options
+    //     i.e. accept all defaults
+    //     and NULL argument passed for function parameters.
+    OPTLIB_Minimize(n,guess,&func,NULL,NULL);
+
+    // print solution
+    printf("SOLUTION %g %g\n",guess[0], guess[1]);
+
+}
+
+-------------------------------------------
+
+You can also pass a void pointer to minimize, which is passed
+unchanged as the second argument of func. This can be used
+to initialize or modify parameters to the function being
+minimized.
+
+Additionally, options to OPTLIB_Minimize can be set by creating
+a OptLibOpts structure, initializing it to default values,
+and overriding defaults. Below is an example of modifying
+the default values of OPTLIB_Minimize.
+
+------------- OptLibOpts example   ----------
+
+...
+
+int main(int argc, char ** argv) {
+    ...
+    OptLibOpts * theOpts;             //define theOpts
+
+    ...
+    theOpts = OPTLIB_CreateOpts();    //set up options structure
+    theOpts->method=OPTLIB_METHOD_SA; //change minimization method
+    theOpts->sa_nannealers=1;         //override default option
+    ...
+
+    // Note the use of theOpts as last argument
+    OPTLIB_Minimize(n,guess,&func,NULL,theOpts);
+
+    ...
+
+    OPTLIB_DestroyOpts(theOpts); // Delete memory when done
+
+}
+ 
+------------------------------------------------
+
+The void pointer argument to func can be used to get
+additional data into or out of the function without resorting to
+global variables. For example, consider a case where you want to
+count the total number of times the function was called in the
+minimization.
+
+---------------------- func_data example  --------------
+
+double func(double *x, void * func_data) {
+    ...
+    // a placeholder variable with proper type
+    // is defined, and func_data is recast to the proper type
+    int *fcount = (int *)func_data;
+
+    (*fcount)++;
+    ...
+    return ...;
+}
+
+
+int main(int argc, char ** argv) {
+    ...
+    int fcount=0;
+
+    ...
+    // Note the use of (&fcount) as next to last argument
+    OPTLIB_Minimize(n,guess,&func,(void *)&fcount,theOpts);
+
+    // print solution
+    printf("SOLUTION %g %g\n",guess[0], guess[1]);
+    printf(" # OF CALLS %d\n",fcount); // fcount is output 
+
+    ...
+
+}
+
+-------------------------------------------------
+
+OptLibOpts structure, from optlib.h
+
+typedef struct {
+    int method;     // which method is used, 
+                    //  OPTLIB_METHOD_GA, OPTLIB_METHOD_SA
+                    //  OPTLIB_METHOD_MCP, or
+                    //  OPTLIB_METHOD_POWELL
+    int ga_npools;  // # of pools in GA solution
+    int ga_npop;    // population per pool in GA
+    int ga_nkeep;   // elitism in GA, how many are kept to breed
+    int ga_itmax;
+    int ga_itmin;
+    double ga_epsilon;
+    int ga_nstep;   // size of step_factor, should be 0, 1, or N
+                    //   otherwise ga_stepfactor should be NULL
+    double * ga_stepfactor;
+             // stepfactor allows for variation in some
+             //   parameters to be decreased compared to
+             //   others, or set to a negative value
+             //   to be held constant
+    double ga_mutationfactor;
+             //  fractional chance that recombination gaussian
+             //   have a wider width
+    double ga_dominancefactor;
+             //  fractional chance that recombination will be
+             //   dominated by one parent
+    int powell_itmax;
+    double powell_epsilon;
+    int mcp_ntrials;   // number of trials in monte carlo solution
+    double mcp_scale;  // range for random variation away from
+                       // initial guess in monte carlo solution
+    int sa_nannealers;   // # of annealers in EBSA algorithm
+    double * sa_stepfactor;
+             // stepfactor allows for variation in some
+             //   parameters to be decreased compared to
+             //   others. length must be N or value must be NULL
+    double sa_T; // Initial annealing temperature
+    double sa_step; // Initial annealing step size
+    double sa_stepmax; // Maximum annealing step size
+    double sa_coolingfactor; // Annealing cooling factor
+    int sa_itmax;
+    int sa_restart;    // # of iterations before restarting at
+                       //   best value
+    double sa_epsilon;
+    void (*output)(double * x, void * func_data, const char *);
+       // custom output routine used in DEBUG and VERBOSE modes
+       //  default is set to NULL
+    MPI_Comm comm; // override of MPI communicator used by routines,
+                   // default is MPI_COMM_WORLD
+} OptLibOpts;
+
+-------------------------------------------------------
+
+MPI OPTLIB
+
+Driver routines exist in the source directory showing the use of 
+OptLib with MPI options turned on.
+
+To compile libopt_mpi.a, set USE_MPI to ON in cmake. This will create
+libopt_mpi.a instead of libopt.a. When implementing, include <libopt_mpi.h>
+instead of <libopt.h> (which will define the preprocessor variable
+USE_OPTMPI),
+and link using the -lopt_mpi flag instead of the -lopt flag.
+

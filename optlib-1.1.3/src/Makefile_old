@@ -1,0 +1,87 @@
+CC		= gcc
+MPICC = mpicc
+CFLAGS	      = -Wall  -g -pg
+LDFLAGS	      =  -g -pg -o 
+LIBS          = -lm 
+
+OL_SERIAL_PROGRAM = ol_serial
+
+GA_SERIAL_PROGRAM	= ga_serial
+GA_MPI_PROGRAM	= ga_mpi
+
+GA_PROGRAM = $(GA_SERIAL_PROGRAM)
+
+#CC=$(MPICC)
+#CFLAGS += -DUSE_FWMPI
+#GA_PROGRAM = $(GA_MPI_PROGRAM)
+
+#CFLAGS += -DUSE_EBSAMPI
+
+#CFLAGS += -DUSE_MCPMPI
+
+OL_SERIAL_OBJS        = ol_driver_serial.o\
+                        optlib.o\
+		        ol_genetic_alg.o\
+	         	ol_fw_mpi.o\
+                        ol_powell.o\
+                        ol_simanneal.o\
+
+GA_SERIAL_OBJS	      = ol_genetic_alg_driver_serial.o\
+		ol_genetic_alg.o\
+		ol_fw_mpi.o\
+
+GA_MPI_OBJS	      = ol_genetic_alg_driver_mpi.o\
+		ol_genetic_alg.o\
+		ol_fw_mpi.o\
+
+SA_OBJS       = ol_simanneal_driver.o\
+                ol_simanneal.o\
+
+MCP_OBJS   = ol_powell_driver.o\
+                ol_powell.o\
+
+COMMON_OBJS =   ol_transform.o\
+		ol_interp.o\
+		ol_rand_tools.o\
+		ol_mem.o\
+                func.o
+
+OL_SERIAL_LIB_OBJS        = optlib.o\
+		        ol_genetic_alg.o\
+                        ol_powell.o\
+                        ol_simanneal.o\
+                        ol_rand_tools.o\
+                        ol_mem.o\
+		        ol_fw_mpi.o\
+
+SA_PROGRAM	= sa
+
+MCP_PROGRAM	= mcp
+
+OL_LIBRARY      = libopt.a
+
+all:		$(GA_PROGRAM) $(SA_PROGRAM) $(MCP_PROGRAM) $(OL_SERIAL_PROGRAM) $(OL_LIBRARY)
+
+$(OL_LIBRARY):		$(OL_SERIAL_LIB_OBJS)
+		ar rvs $(OL_LIBRARY) $(OL_SERIAL_LIB_OBJS)
+
+$(OL_SERIAL_PROGRAM):	invalidate $(COMMON_OBJS) $(OL_SERIAL_OBJS)
+		$(CC) $(OL_SERIAL_OBJS) $(COMMON_OBJS) $(LDFLAGS) $(OL_SERIAL_PROGRAM) $(LIBS)
+
+
+$(GA_SERIAL_PROGRAM):	invalidate $(GA_SERIAL_OBJS) $(COMMON_OBJS)
+		$(CC) $(GA_SERIAL_OBJS) $(COMMON_OBJS) $(LDFLAGS) $(GA_SERIAL_PROGRAM) $(LIBS)
+
+
+$(GA_MPI_PROGRAM):	invalidate $(GA_MPI_OBJS) $(COMMON_OBJS)
+		$(CC) $(GA_MPI_OBJS) $(COMMON_OBJS) $(LDFLAGS) $(GA_MPI_PROGRAM) $(LIBS)
+
+$(SA_PROGRAM):	$(SA_OBJS) $(COMMON_OBJS)
+		$(CC) $(SA_OBJS) $(COMMON_OBJS) $(LDFLAGS) $(SA_PROGRAM) $(LIBS)
+
+$(MCP_PROGRAM):	$(MCP_OBJS) $(COMMON_OBJS)
+		$(CC) $(MCP_OBJS) $(COMMON_OBJS) $(LDFLAGS) $(MCP_PROGRAM) $(LIBS)
+
+clean:;		rm -f $(GA_SERIAL_OBJS) $(GA_MPI_OBJS) $(SA_OBJS) $(MCP_OBJS) $(COMMON_OBJS) $(GA_SERIAL_PROGRAM) $(GA_MPI_PROGRAM) $(SA_PROGRAM) $(MCP_PROGAM) $(OL_SERIAL_OBJS) $(OL_LIBRARY)
+
+invalidate:;      rm -f $(GA_SERIAL_OBJS) $(GA_MPI_OBJS) $(OL_SERIAL_OBJS)

@@ -1,0 +1,54 @@
+
+OPTLIB is an optimization library. The standard usage is to
+minimize a function that returns a double variable based
+on some array of inputs that are also stored as doubles.
+
+OPTLIB currently supports minimization by Powell's method,
+Monte Carlo trials of Powell's method, a Genetic Algorithm,
+and ensemble-based Simulated Annealing.
+
+OPTLIB requires the user to specify a function of the form
+double func(double * x, void * func_data). func_data is
+a user specified structure which can be NULL that is passed
+directly to func, allowing the user to pass parameters to func
+without specifying them as global variables.
+
+A typical use of optlib is as follows:
+
+double func(double *x, void * func_data) {
+    int * fcount = (int *)func_data;
+    fcount++;
+    return x[0]*x[0]+x[1]*x[1];   // x^2+y^2;
+}
+
+int main(int argc, char ** argv) {
+    OptLibOpts * theOpts;
+    int fcount=0;
+ 
+    seed_by_time(0);
+
+    theOpts = OPTLIB_CreateOpts(); //set up default options
+    theOpts->ga_npools=1;          // override defaults (see optlib.c optlib.h)
+    theOpts->method = OPTLIB_METHOD_GA; //set method, default is GA
+
+    guess[0]=...; //initialize guess
+    guess[1]=...;
+    OPTLIB_Minimize(theOpts,n,guess,NULL,&func,(void *)&fcount); // minimize
+    printf("SOLUTION %g %g\n",guess[0], guess[1]);  
+    printf("TOTAL FUNCTION CALLS %d\n",fcount);
+
+    OPTLIB_DestroyOpts(theOpts); //free memory
+}
+
+
+MPI OPTLIB
+
+Driver routines exist in the source directory showing the use of 
+OptLib with MPI options turned on.
+
+To compile libopt_mpi.a, set USE_MPI to ON in cmake. This will create
+libopt_mpi.a instead of libopt.a. When implementing, include <libopt_mpi.h>
+instead of <libopt.h> (which will define the preprocessor variable USE_OPTMPI),
+and link using the -lopt_mpi flag instead of the -lopt flag.
+
+
